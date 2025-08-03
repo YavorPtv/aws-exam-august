@@ -165,10 +165,10 @@ exports[`Stack snapshot test 1`] = `
       "Type": "AWS::IAM::Role",
       "UpdateReplacePolicy": "Retain",
     },
-    "ValidateJSONApiDeployment575DCD952a2f77605a3e14962424c9a3d5516d0c": {
+    "ValidateJSONApiDeployment575DCD95623fe20ad27c03423e4c3dccfcc82deb": {
       "DependsOn": [
-        "ValidateJSONApiobjectPOST2BF2BE6D",
-        "ValidateJSONApiobject2C7CEBA1",
+        "ValidateJSONApivalidatePOST87A5985F",
+        "ValidateJSONApivalidate6F82FC85",
       ],
       "Metadata": {
         "aws:cdk:do-not-refactor": true,
@@ -187,7 +187,7 @@ exports[`Stack snapshot test 1`] = `
       ],
       "Properties": {
         "DeploymentId": {
-          "Ref": "ValidateJSONApiDeployment575DCD952a2f77605a3e14962424c9a3d5516d0c",
+          "Ref": "ValidateJSONApiDeployment575DCD95623fe20ad27c03423e4c3dccfcc82deb",
         },
         "RestApiId": {
           "Ref": "ValidateJSONApiFFFD6C0E",
@@ -202,7 +202,7 @@ exports[`Stack snapshot test 1`] = `
       },
       "Type": "AWS::ApiGateway::RestApi",
     },
-    "ValidateJSONApiobject2C7CEBA1": {
+    "ValidateJSONApivalidate6F82FC85": {
       "Properties": {
         "ParentId": {
           "Fn::GetAtt": [
@@ -210,14 +210,14 @@ exports[`Stack snapshot test 1`] = `
             "RootResourceId",
           ],
         },
-        "PathPart": "object",
+        "PathPart": "validate",
         "RestApiId": {
           "Ref": "ValidateJSONApiFFFD6C0E",
         },
       },
       "Type": "AWS::ApiGateway::Resource",
     },
-    "ValidateJSONApiobjectPOST2BF2BE6D": {
+    "ValidateJSONApivalidatePOST87A5985F": {
       "Properties": {
         "AuthorizationType": "NONE",
         "HttpMethod": "POST",
@@ -249,7 +249,7 @@ exports[`Stack snapshot test 1`] = `
           },
         },
         "ResourceId": {
-          "Ref": "ValidateJSONApiobject2C7CEBA1",
+          "Ref": "ValidateJSONApivalidate6F82FC85",
         },
         "RestApiId": {
           "Ref": "ValidateJSONApiFFFD6C0E",
@@ -257,7 +257,7 @@ exports[`Stack snapshot test 1`] = `
       },
       "Type": "AWS::ApiGateway::Method",
     },
-    "ValidateJSONApiobjectPOSTApiPermissionTestStackValidateJSONApiB42F0888POSTobjectFE1700EA": {
+    "ValidateJSONApivalidatePOSTApiPermissionTestStackValidateJSONApiB42F0888POSTvalidateF124541E": {
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -291,14 +291,14 @@ exports[`Stack snapshot test 1`] = `
               {
                 "Ref": "ValidateJSONApiDeploymentStageprod4422656B",
               },
-              "/POST/object",
+              "/POST/validate",
             ],
           ],
         },
       },
       "Type": "AWS::Lambda::Permission",
     },
-    "ValidateJSONApiobjectPOSTApiPermissionTestTestStackValidateJSONApiB42F0888POSTobject174DABAD": {
+    "ValidateJSONApivalidatePOSTApiPermissionTestTestStackValidateJSONApiB42F0888POSTvalidate23AB1AA9": {
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -328,7 +328,7 @@ exports[`Stack snapshot test 1`] = `
               {
                 "Ref": "ValidateJSONApiFFFD6C0E",
               },
-              "/test-invoke-stage/POST/object",
+              "/test-invoke-stage/POST/validate",
             ],
           ],
         },
@@ -345,7 +345,7 @@ exports[`Stack snapshot test 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "1e039b7165ba4cd2e6848dbc511831dd8f6a2b2b03eab3b665ab09d8853f7862.zip",
+          "S3Key": "667c8de17579cf0462dbe483881f591dfe3fae5553f258357b258fd1b961bbea.zip",
         },
         "Environment": {
           "Variables": {
@@ -515,7 +515,7 @@ exports[`Stack snapshot test 1`] = `
           "S3Bucket": {
             "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
           },
-          "S3Key": "58e80a88ec16d2c206857f896ab8da1b94a80c8555b2699799195f812037758a.zip",
+          "S3Key": "a7cd842c8ebfe89a5765d6a9ca853f2a5accb794e8c1faed4a985a9d4c11b5f2.zip",
         },
         "Environment": {
           "Variables": {
