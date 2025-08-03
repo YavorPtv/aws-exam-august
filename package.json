@@ -1,0 +1,32 @@
+{
+  "name": "aws-exam-august",
+  "version": "0.1.0",
+  "bin": {
+    "aws-exam-august": "bin/aws-exam-august.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/jest": "^29.5.14",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1020.2",
+    "esbuild": "^0.25.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.857.0",
+    "@aws-sdk/client-scheduler": "^3.857.0",
+    "@aws-sdk/client-sns": "^3.857.0",
+    "aws-cdk-lib": "^2.208.0",
+    "constructs": "^10.0.0",
+    "uuid": "^11.1.0"
+  }
+}
