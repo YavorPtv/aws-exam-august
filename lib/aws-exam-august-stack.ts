@@ -1,16 +1,111 @@
 import * as cdk from 'aws-cdk-lib';
+import { LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
+import { Runtime, StartingPosition } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as path from 'node:path';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { AttributeType, BillingMode, StreamViewType, Table } from 'aws-cdk-lib/aws-dynamodb';
+import { PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 
 export class AwsExamAugustStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+    constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+        super(scope, id, props);
 
-    // The code that defines your stack goes here
+        const table = new Table(this, 'InvalidEventsTable', {
+            partitionKey: {
+                name: 'PK',
+                type: AttributeType.STRING
+            },
+            sortKey: {
+                name: 'SK',
+                type: AttributeType.NUMBER
+            },
+            timeToLiveAttribute: 'ttl',
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            stream: StreamViewType.NEW_IMAGE // Enable streams to capture deleted items
+        });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'AwsExamAugustQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
-  }
+        // 2. SNS Topic for notifications
+        const notificationTopic = new Topic(this, 'notificationTopic');
+
+        // Subscribe to email (change address later)
+        notificationTopic.addSubscription(
+            new EmailSubscription('yavorpetrakiev@gmail.com')
+        );
+
+
+        const schedulerRole = new Role(this, 'SchedulerRole', {
+            assumedBy: new ServicePrincipal('scheduler.amazonaws.com'),
+        });
+
+        const validateJSONLambdaFunction = new NodejsFunction(this, 'validateJSONLambda', {
+            handler: 'handler',
+            runtime: Runtime.NODEJS_22_X,
+            entry: path.join(__dirname, '../src/validateJSONHandler.ts'),
+            environment: {
+                TABLE_NAME: table.tableName,
+                AWS_ACCOUNT_ID: cdk.Stack.of(this).account,
+                SCHEDULER_ROLE_ARN: schedulerRole.roleArn,
+                SNS_TOPIC_ARN: notificationTopic.topicArn
+            }
+        });
+
+        validateJSONLambdaFunction.addToRolePolicy(new PolicyStatement({
+            actions: [
+                'scheduler:CreateSchedule',
+            ],
+            resources: ['*'] // you can restrict later if needed
+        }));
+
+        validateJSONLambdaFunction.addToRolePolicy(new PolicyStatement({
+            actions: ['iam:PassRole'],
+            resources: [schedulerRole.roleArn]
+        }));
+
+        table.grantReadWriteData(validateJSONLambdaFunction);
+
+        const deleteHandlerLambdaFunction = new NodejsFunction(this, 'deleteHandler', {
+            handler: 'handler',
+            runtime: Runtime.NODEJS_22_X,
+            entry: path.join(__dirname, '../src/deleteHandler.ts'),
+            environment: {
+                TABLE_NAME: table.tableName,
+                SNS_TOPIC_ARN: notificationTopic.topicArn
+            }
+        });
+
+        table.grantReadWriteData(deleteHandlerLambdaFunction);
+        notificationTopic.grantPublish(deleteHandlerLambdaFunction);
+
+        schedulerRole.addToPolicy(new PolicyStatement({
+            actions: ['lambda:InvokeFunction'],
+            resources: [deleteHandlerLambdaFunction.functionArn],
+        }));
+
+        // Attach DynamoDB Stream as event source for deleteHandler Lambda
+        deleteHandlerLambdaFunction.addEventSource(new DynamoEventSource(table, {
+            startingPosition: StartingPosition.LATEST,
+            filters: [
+                // Trigger only for DELETE/REMOVE events
+                {
+                    pattern: JSON.stringify({
+                        eventName: ["REMOVE"]
+                    })
+                }
+            ]
+        }));
+
+        // Allow deleteHandler to read/write DynamoDB
+        table.grantReadWriteData(deleteHandlerLambdaFunction);
+        notificationTopic.grantPublish(validateJSONLambdaFunction);
+
+        const api = new RestApi(this, 'ValidateJSONApi');
+        const resource = api.root.addResource('object');
+        resource.addMethod('POST', new LambdaIntegration(validateJSONLambdaFunction, {
+            proxy: true,
+        }))
+    }
 }
