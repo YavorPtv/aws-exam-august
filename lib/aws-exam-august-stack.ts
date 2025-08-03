@@ -25,17 +25,14 @@ export class AwsExamAugustStack extends cdk.Stack {
             },
             timeToLiveAttribute: 'ttl',
             billingMode: BillingMode.PAY_PER_REQUEST,
-            stream: StreamViewType.NEW_IMAGE // Enable streams to capture deleted items
+            stream: StreamViewType.NEW_IMAGE
         });
 
-        // 2. SNS Topic for notifications
         const notificationTopic = new Topic(this, 'notificationTopic');
 
-        // Subscribe to email (change address later)
         notificationTopic.addSubscription(
             new EmailSubscription('yavorpetrakiev@gmail.com')
         );
-
 
         const schedulerRole = new Role(this, 'SchedulerRole', {
             assumedBy: new ServicePrincipal('scheduler.amazonaws.com'),
@@ -57,7 +54,7 @@ export class AwsExamAugustStack extends cdk.Stack {
             actions: [
                 'scheduler:CreateSchedule',
             ],
-            resources: ['*'] // you can restrict later if needed
+            resources: ['*']
         }));
 
         validateJSONLambdaFunction.addToRolePolicy(new PolicyStatement({
@@ -85,11 +82,9 @@ export class AwsExamAugustStack extends cdk.Stack {
             resources: [deleteHandlerLambdaFunction.functionArn],
         }));
 
-        // Attach DynamoDB Stream as event source for deleteHandler Lambda
         deleteHandlerLambdaFunction.addEventSource(new DynamoEventSource(table, {
             startingPosition: StartingPosition.LATEST,
             filters: [
-                // Trigger only for DELETE/REMOVE events
                 {
                     pattern: JSON.stringify({
                         eventName: ["REMOVE"]
@@ -98,12 +93,11 @@ export class AwsExamAugustStack extends cdk.Stack {
             ]
         }));
 
-        // Allow deleteHandler to read/write DynamoDB
         table.grantReadWriteData(deleteHandlerLambdaFunction);
         notificationTopic.grantPublish(validateJSONLambdaFunction);
 
         const api = new RestApi(this, 'ValidateJSONApi');
-        const resource = api.root.addResource('object');
+        const resource = api.root.addResource('validate');
         resource.addMethod('POST', new LambdaIntegration(validateJSONLambdaFunction, {
             proxy: true,
         }))

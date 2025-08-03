@@ -4,12 +4,11 @@ import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 const ddbClient = new DynamoDBClient({});
 const snsClient = new SNSClient({});
 const TABLE_NAME = process.env.TABLE_NAME;
-const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN; // Set in CDK
+const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 
 export const handler = async (event: any) => {
-    console.log("deleteHandler triggered with event:", JSON.stringify(event));
+    console.log(event);
 
-    // Case 1: DynamoDB Streams (TTL or manual deletion)
     if (event.Records) {
         for (const record of event.Records) {
             if (record.eventName === "REMOVE") {
@@ -22,23 +21,19 @@ export const handler = async (event: any) => {
 
                 const message = `Item with PK=${pk}, SK=${sk} was removed (TTL or manual) after ${retentionSeconds} seconds.`;
 
-                // Send notification
                 await snsClient.send(new PublishCommand({
                     TopicArn: SNS_TOPIC_ARN,
                     Message: message,
                 }));
 
-                console.log("TTL/Remove event processed, message sent:", message);
             }
         }
         return;
     }
 
-    // Case 2: EventBridge Scheduler (24h + 30 min mark)
     if (event.PK && event.SK) {
         const { PK, SK } = event;
 
-        // Check if item exists
         const item = await ddbClient.send(new GetItemCommand({
             TableName: TABLE_NAME,
             Key: {
@@ -48,9 +43,8 @@ export const handler = async (event: any) => {
         }));
 
         if (!item.Item) {
-            console.log(`Item with PK=${PK}, SK=${SK} not found (already deleted)`);
+            console.log(`Item not found (already deleted)`);
         } else {
-            // Delete the item
             await ddbClient.send(new DeleteItemCommand({
                 TableName: TABLE_NAME,
                 Key: {
@@ -59,22 +53,18 @@ export const handler = async (event: any) => {
                 }
             }));
 
-            console.log(`Item with PK=${PK}, SK=${SK} deleted by EventBridge Scheduler`);
+            console.log(`Item deleted by EventBridge Scheduler`);
 
-            // Calculate retention time
             const createdAt = parseInt(SK, 10);
             const now = Math.floor(Date.now() / 1000);
             const retentionSeconds = now - createdAt;
 
-            const message = `Item with PK=${PK}, SK=${SK} was deleted by Scheduler after ${retentionSeconds} seconds.`;
+            const message = `Item with PK=${PK} SK=${SK} was deleted by scheduler after ${retentionSeconds} seconds.`;
 
-            // Send notification
             await snsClient.send(new PublishCommand({
                 TopicArn: SNS_TOPIC_ARN,
                 Message: message,
             }));
-
-            console.log("Scheduler event processed, message sent:", message);
         }
     }
 };
